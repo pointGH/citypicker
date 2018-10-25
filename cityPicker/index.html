@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="css/city-picker.css">
+        <link rel="stylesheet" type="text/css" href="index.css">
+
+        <script src="js/jquery.min.js"></script>
+        <script src="js/city-picker.data.js"></script>
+        <script src="js/city-picker.js"></script>     
+    </head>
+    <body>
+        <div class="mapcitypickercontainer" id="mapcitypickercontainer">
+            <input id="city-picker" class="mapcitypicker" readonly type="text" value="江苏省/常州市/溧阳市" data-toggle="city-picker">
+            <button id="citySelect" class="mapcitypickerbtn">查询</button>
+        </div>
+        <script>       
+            var $cityPicker = $("#city-picker");
+            $cityPicker.citypicker();
+            $("#citySelect").click(function () {
+                var code = $cityPicker.data('citypicker').getCode("");
+                console.log(code);
+            })             
+        </script>
+       
+    </body>
+</html>

@@ -1,0 +1,115 @@
+$("#citySelect").click(function () {
+        var pointCoordinate;
+        var code = $("#city-picker").data('citypicker').getCode("");
+        var value = $("#city-picker").data('citypicker').getVal("");
+        var title = code.split('/');
+        var codeLength = title.length;
+        var ProvinceCode = title[0].substr(0,2);
+        var cityCode = codeLength>=2?title[1]:undefined;
+        var districtCode = codeLength==3?title[2]:undefined;
+        var zoom;
+        console.log(code);
+        var projd;
+        $.ajax({
+            type: "get",
+            url: window.basePath+"3rdParty/cityPicker/json/geometryProvince/"+ProvinceCode.substr(0,2)+".json",//路径
+            dataType: 'json',
+            success: function (data) {//返回数据根据结果进行相应的处理
+                var layer = new ol.layer.Vector({
+                    displayInLayerSwitcher: false,
+                    title: title,
+                    visible: true,
+                    style:new ol.style.Style({
+                        stroke: new ol.style.Stroke({
+                            color: 'rgba(255, 0, 0, 0.6)',
+                            width: 0.5
+                        }),
+                        fill: new ol.style.Fill({
+                        color:'rgba(200, 200, 200, 0.3)'
+                        })
+                    })
+                });
+                zoom = 7;
+                var layerSourceC = new ol.source.Vector();
+                var geojson = new ol.format.GeoJSON();
+                var features = geojson.readFeatures(data, { dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" });                    
+                if (features.length > 0);
+                    layerSourceC.addFeatures(features);
+                
+                if(codeLength == 1)
+                    {
+                        pointCoordinate = data.cp;
+                        layer.setSource(layerSourceC);
+                        if(oldCityLayer !=null)
+                            SafeMonMap.map.removeLayer(oldCityLayer);
+                        oldCityLayer = layer;
+                        SafeMonMap.map.addLayer(layer);
+                        if(codeLength == 1)
+                            projd = new ol.proj.transform(pointCoordinate, "EPSG:4326", "EPSG:3857");
+                        SafeMonMap.map.getView().setCenter(projd);
+                        SafeMonMap.map.getView().setZoom(zoom);
+                    }
+                if(codeLength !=1){
+                    $.ajax({
+                        type: "get",
+                        url: window.basePath+"3rdParty/cityPicker/json/geometryCouties/"+cityCode.substr(0,6)+".json",//路径
+                        dataType: 'json',
+                        success: function (data2) {//返回数据根据结果进行相应的处理
+                            features = geojson.readFeatures(data2, { dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" });                    
+                            if (features.length > 0);
+                                {
+                                    layerSourceC.clear();
+                                    var extent = features[0].getGeometry().getExtent();
+                                    if(codeLength == 2){
+                                            layerSourceC.addFeatures(features);
+                                            features.forEach(function(value){
+                                            var extent1 = value.getGeometry().getExtent();                                                                                             
+                                                if(extent1[0]<extent[0])//minx 
+                                                {
+                                                    extent[0] = extent1[0];
+                                                }
+                                                if(extent1[1]<extent[1])//miny 
+                                                {
+                                                    extent[1] = extent1[1];
+                                                }
+                                                if(extent1[2]>extent[2])//maxx 
+                                                {
+                                                    extent[2] = extent1[2];
+                                                }
+                                                if(extent1[3]>extent[3])//maxy
+                                                {
+                                                    extent[3] = extent1[3];
+                                                }
+                                                
+                                            })                                          
+                                            projd = [(extent[0]+extent[2])/2,(extent[1]+extent[3])/2];
+                                            zoom = 9;
+                                        }
+                                    else{
+                                        features.forEach(function(value){
+                                            if(value.get('id') == districtCode.substr(0,6))
+                                            { 
+                                                layerSourceC.addFeature(value);
+                                                var extent = value.getGeometry().getExtent();
+                                                projd = [(extent[0]+extent[2])/2,(extent[1]+extent[3])/2];
+                                            }
+                                            zoom = 10;
+                                        })
+                                    }
+                                }
+                            
+                            layer.setSource(layerSourceC);
+                            if(oldCityLayer !=null)
+                            SafeMonMap.map.removeLayer(oldCityLayer);
+                            oldCityLayer = layer;
+                            SafeMonMap.map.addLayer(layer);
+                            if(codeLength == 1)
+                                projd = new ol.proj.transform(pointCoordinate, "EPSG:4326", "EPSG:3857");
+                            SafeMonMap.map.getView().setCenter(projd);
+                            SafeMonMap.map.getView().setZoom(zoom);
+                        }
+                    }); 
+                }                 
+            }                           
+        });
+    })
